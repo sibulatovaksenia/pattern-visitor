@@ -59,7 +59,7 @@ namespace University
         }
     }
 
-    public class Employee
+    public class Employee : IVisitorUniversity
     {
         public string Name { get; }
         public int Experience { get; }
@@ -71,6 +71,10 @@ namespace University
             Experience = experience;
             Salary = salary;
         }
+        public void Accept(IVisitor visitor)
+        {
+            visitor.VisitEmployee(this);
+        }
     }
 
     public interface IVisitor
@@ -78,6 +82,7 @@ namespace University
         void VisitUniversity(University university);
         void VisitFaculty(Faculty faculty);
         void VisitDepartment(Department department);
+        void VisitEmployee(Employee employee);
     }
 
     public class SalaryCalculatorVisitor : IVisitor
@@ -109,10 +114,15 @@ namespace University
         {
             foreach (var employee in department.Employees)
             {
-                totalSalary += employee.Salary;
+                 employee.Accept(this);
             }
             Console.WriteLine($"Загальна зарпалата для кафедри {department.Name}: {totalSalary}");
         }
+        public void VisitEmployee(Employee employee)
+        {
+            totalSalary += employee.Salary;
+        }
+        
     }
 
     public class SalaryIncreaseVisitor : IVisitor
@@ -125,22 +135,43 @@ namespace University
             this.yearsThreshold = yearsThreshold;
             this.increasePercentage = increasePercentage;
         }
+        public void VisitUniversity(University university)
+        {
+            foreach (var faculty in university.Faculties)
+            {
+                faculty.Accept(this);
+            }
+        }
 
-        public void VisitUniversity(University university) { }
-
-        public void VisitFaculty(Faculty faculty) { }
+        public void VisitFaculty(Faculty faculty)
+        {
+            foreach (var deparment in faculty.Departments)
+            {
+                deparment.Accept(this);
+            }
+        }
 
         public void VisitDepartment(Department department)
         {
             foreach (var employee in department.Employees)
             {
-                if (employee.Experience > yearsThreshold)
-                {
-                    employee.Salary += employee.Salary * (increasePercentage / 100);
-                    Console.WriteLine($"Підвищена зарплата для {employee.Name} до: {employee.Salary}");
-                }
+                employee.Accept(this);
             }
         }
+        public void VisitEmployee(Employee employee)
+        {
+            if (employee.Experience > yearsThreshold)
+            {
+                decimal oldSalary = employee.Salary;
+                employee.Salary += employee.Salary * (increasePercentage / 100);
+                Console.WriteLine($"Заробітна плата для {employee.Name} до підвищення: {oldSalary}, після підвищення: {employee.Salary}");
+            }
+           else
+           {
+                Console.WriteLine($"{employee.Name} не відповідає критерію стажу для підвищення.");
+           }
+       }
+        
     }
 
     class Program
